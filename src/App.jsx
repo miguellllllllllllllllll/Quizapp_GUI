@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import "bulma/css/bulma.min.css";
 import {
   BrowserRouter as Router,
   Route,
@@ -20,19 +21,20 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold mb-4">Willkommen zum Schweiz-Quiz!</h1>
-      <input
-        type="text"
-        placeholder="Gib deinen Namen ein"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="border p-2 rounded mb-4"
-      />
-      <button
-        onClick={startQuiz}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
+    <div className="has-text-centered mt-5">
+      <h1 className="title is-2 mb-4">Willkommen zum Schweiz-Quiz!</h1>
+      <div className="field mb-4">
+        <div className="control">
+          <input
+            type="text"
+            placeholder="Gib deinen Namen ein"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input"
+          />
+        </div>
+      </div>
+      <button onClick={startQuiz} className="button is-primary">
         Starten
       </button>
     </div>
@@ -105,26 +107,26 @@ function Quiz() {
     navigate("/results", { state: { score, time, name: playerName } });
   };
 
-  if (!question) return <p>Lädt...</p>;
+  if (!question) return <h3 className="has-text-centered mt-5">Lädt...</h3>;
 
   return (
-    <div className="flex flex-col items-center mt-10">
-      <h2 className="text-xl font-bold mb-4">{question.text}</h2>
-      <div className="grid grid-cols-1 gap-2">
+    <div className="container has-text-centered mt-5">
+      <h2 className="title is-4 mb-4">{question.text}</h2>
+      <div className="buttons is-centered mb-4">
         {question.options.map((option, index) => (
           <button
             key={index}
             onClick={() => handleAnswer(option)}
-            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-400"
+            className="button is-light is-medium"
           >
             {option}
           </button>
         ))}
       </div>
-      {feedback && <p className="mt-4 font-bold">{feedback}</p>}
+      {feedback && <p className="has-text-weight-bold">{feedback}</p>}
       {Object.keys(incorrectAnswers).length > 0 && (
         <div className="mt-4">
-          <h3 className="text-lg font-bold">Falsche Antworten:</h3>
+          <h3 className="title is-5">Falsche Antworten:</h3>
           <ul>
             {Object.entries(incorrectAnswers).map(([city, value], idx) => (
               <li key={idx}>
@@ -163,12 +165,12 @@ function Results() {
   };
 
   return (
-    <div className="flex flex-col items-center mt-10">
-      <h2 className="text-2xl font-bold">Ergebnis</h2>
+    <div className="container has-text-centered mt-5">
+      <h2 className="title is-2 mb-4">Ergebnis</h2>
       <p>Name: {name}</p>
       <p>Punkte: {score}/5</p>
       <p>Zeit: {time} Sekunden</p>
-      <h3 className="text-xl font-bold mt-4">Top 3 Spieler</h3>
+      <h3 className="title is-4 mt-4">Top 3 Spieler</h3>
       <ul>
         {leaderboard.map((player, index) => (
           <li key={index}>
@@ -176,12 +178,13 @@ function Results() {
           </li>
         ))}
       </ul>
-      <Link to="/" className="mt-4 bg-blue-500 text-white px-4 py-2 rounded">
+      <Link to="/" className="button is-primary mt-4">
         Neues Quiz
       </Link>
     </div>
   );
 }
+
 function App() {
   return (
     <Router>
