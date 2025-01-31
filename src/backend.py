@@ -1,88 +1,76 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
 from pymongo import MongoClient
-from bson import ObjectId
+from bson.objectid import ObjectId
 import random
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
 client = MongoClient("mongodb://localhost:27017/")
 db = client["quiz_db"]
-keywords_collection = db["quiz_schluesselwoerter"]
-scores_collection = db["quiz_scores"]  # Neue Collection für Scores
+collection = db["quiz_schluesselwoerter"]
+leaderboard_collection = db["leaderboard"]
 
 @app.route("/api/question", methods=["GET"])
 def get_question():
-    """Zufällige Quizfrage aus der Datenbank abrufen."""
-    attributes = ["Einwohner", "Fläche"]
-    attribute = random.choice(attributes)
+    question_data = collection.aggregate([{ "$sample": { "size": 1 } }]).next()
+    attribute = question_data["attribute"]
 
-    entries = list(keywords_collection.find({"attribute": attribute}))
-    if len(entries) < 3:
-        return jsonify({"error": "Nicht genug Daten"}), 500
-
-    correct_entry = random.choice(entries)
-    incorrect_entries = random.sample([e for e in entries if e["_id"] != correct_entry["_id"]], 2)
+    # Hole alle Städte für das gleiche Attribut
+    options = list(collection.find({"attribute": attribute}))
+    random.shuffle(options)
 
     question = {
-        "_id": str(correct_entry["_id"]),
-        "text": f"Wie viel {attribute} hat {correct_entry['name']}?",
-        "options": [
-            correct_entry["value"],
-            incorrect_entries[0]["value"],
-            incorrect_entries[1]["value"]
-        ],
-        "correct": correct_entry["value"],
-        "details": {
-            correct_entry["name"]: correct_entry["value"],
-            incorrect_entries[0]["name"]: incorrect_entries[0]["value"],
-            incorrect_entries[1]["name"]: incorrect_entries[1]["value"],
-        }
+        "_id": str(question_data["_id"]),
+        "text": f"Welche Stadt hat folgende Eigenschaft: {attribute}?",
+        "correct_answer": question_data["name"],
+        "options": [opt["name"] for opt in options[:3]]  # 3 Antwortmöglichkeiten
     }
-    random.shuffle(question["options"])
+
     return jsonify(question)
 
 @app.route("/api/answer", methods=["POST"])
 def check_answer():
-    """Antwort überprüfen und alle Ergebnisse anzeigen."""
     data = request.json
     question_id = data.get("question_id")
     answer = data.get("answer")
-    player_name = data.get("name")
+    name = data.get("name", "Anonym")
 
-    try:
-        question = keywords_collection.find_one({"_id": ObjectId(question_id)})
-    except:
-        return jsonify({"error": "Ungültige Frage-ID"}), 400
+    question_data = collection.find_one({"_id": ObjectId(question_id)})
+    if not question_data:
+        return jsonify({"error": "Frage nicht gefunden"}), 400
 
-    if not question:
-        return jsonify({"error": "Frage nicht gefunden"}), 404
+    is_correct = answer == question_data["name"]
 
-    correct = question["value"] == answer
-    score_change = 1 if correct else 0
+    # Falsche Antworten mit richtigen Werten
+    all_options = list(collection.find({"attribute": question_data["attribute"]}))
+    incorrect_answers = {opt["name"]: opt["value"] for opt in all_options if opt["name"] != question_data["name"]}
 
-    # Punkte in der Datenbank speichern oder aktualisieren
-    scores_collection.update_one(
-        {"name": player_name},
-        {"$inc": {"score": score_change}},
-        upsert=True
-    )
+    if is_correct:
+        message = "Richtig!"
+        score = 1
+    else:
+        message = f"Falsch! Die richtige Antwort ist {question_data['name']}."
+        score = 0
+
+    # Punkte speichern
+    leaderboard_collection.insert_one({"name": name, "score": score})
 
     return jsonify({
-        "correct": correct,
-        "message": "Richtig!" if correct else f"Falsch! Die richtige Antwort ist {question['value']}.",
-        "details": {
-            question["name"]: question["value"]
-        }
+        "correct": is_correct,
+        "message": message,
+        "incorrect_answers": incorrect_answers
     })
 
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Die Top 3 Spieler mit den höchsten Scores abrufen."""
-    top_players = list(scores_collection.find().sort("score", -1).limit(3))
-    leaderboard = [{"name": player["name"], "score": player["score"]} for player in top_players]
-    return jsonify(leaderboard)
+    top_players = list(leaderboard_collection.aggregate([
+        {"$group": {"_id": "$name", "total_score": {"$sum": "$score"}}},
+        {"$sort": {"total_score": -1}},
+        {"$limit": 3}
+    ]))
+    return jsonify([{"name": p["_id"], "score": p["total_score"]} for p in top_players])
 
 if __name__ == "__main__":
     app.run(debug=True)

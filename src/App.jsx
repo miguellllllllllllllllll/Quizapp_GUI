@@ -45,6 +45,7 @@ function Quiz() {
   const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [incorrectAnswers, setIncorrectAnswers] = useState({});
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(0);
   const [questionCount, setQuestionCount] = useState(0);
@@ -75,7 +76,8 @@ function Quiz() {
       setQuestion(response.data);
       setSelectedAnswer(null);
       setFeedback("");
-      setQuestionCount((prev) => prev + 1);
+      setIncorrectAnswers({});
+      setQuestionCount(questionCount + 1);
     } catch (error) {
       console.error("Fehler beim Laden der Frage", error);
     }
@@ -89,10 +91,11 @@ function Quiz() {
         name: playerName,
       });
       setFeedback(response.data.message);
+      setIncorrectAnswers(response.data.incorrect_answers || {});
       if (response.data.correct) {
-        setScore((prev) => prev + 1);
+        setScore(score + 1);
       }
-      setTimeout(fetchQuestion, 2000);
+      setTimeout(fetchQuestion, 3000);
     } catch (error) {
       console.error("Fehler bei der Antwortverarbeitung", error);
     }
@@ -119,6 +122,18 @@ function Quiz() {
         ))}
       </div>
       {feedback && <p className="mt-4 font-bold">{feedback}</p>}
+      {Object.keys(incorrectAnswers).length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-lg font-bold">Falsche Antworten:</h3>
+          <ul>
+            {Object.entries(incorrectAnswers).map(([city, value], idx) => (
+              <li key={idx}>
+                {city}: {value}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <p className="mt-4">Zeit: {time} Sekunden</p>
     </div>
   );
@@ -167,7 +182,6 @@ function Results() {
     </div>
   );
 }
-
 function App() {
   return (
     <Router>
