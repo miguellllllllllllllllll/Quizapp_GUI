@@ -48,6 +48,7 @@ function Quiz() {
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(0);
   const [startTime, setStartTime] = useState(null);
+  const [questionCount, setQuestionCount] = useState(0);
   const playerName = location.state?.name || "Anonym";
 
   useEffect(() => {
@@ -56,11 +57,16 @@ function Quiz() {
   }, []);
 
   const fetchQuestion = async () => {
+    if (questionCount >= 5) {
+      finishQuiz();
+      return;
+    }
     try {
       const response = await axios.get("http://localhost:5000/api/question");
       setQuestion(response.data);
       setSelectedAnswer(null);
       setFeedback("");
+      setQuestionCount(questionCount + 1);
     } catch (error) {
       console.error("Fehler beim Laden der Frage", error);
     }
@@ -105,12 +111,6 @@ function Quiz() {
         ))}
       </div>
       {feedback && <p className="mt-4 font-bold">{feedback}</p>}
-      <button
-        onClick={finishQuiz}
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-      >
-        Quiz beenden
-      </button>
     </div>
   );
 }
@@ -142,7 +142,7 @@ function Results() {
     <div className="flex flex-col items-center mt-10">
       <h2 className="text-2xl font-bold">Ergebnis</h2>
       <p>Name: {name}</p>
-      <p>Punkte: {score}</p>
+      <p>Punkte: {score}/5</p>
       <p>Zeit: {time.toFixed(2)} Sekunden</p>
       <h3 className="text-xl font-bold mt-4">Top 3 Spieler</h3>
       <ul>
