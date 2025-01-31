@@ -47,14 +47,23 @@ function Quiz() {
   const [feedback, setFeedback] = useState("");
   const [score, setScore] = useState(0);
   const [time, setTime] = useState(0);
-  const [startTime, setStartTime] = useState(null);
   const [questionCount, setQuestionCount] = useState(0);
   const playerName = location.state?.name || "Anonym";
+  const [startTime, setStartTime] = useState(null);
 
   useEffect(() => {
-    fetchQuestion();
     setStartTime(Date.now());
+    fetchQuestion();
   }, []);
+
+  useEffect(() => {
+    if (startTime) {
+      const interval = setInterval(() => {
+        setTime((Date.now() - startTime) / 1000);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [startTime]);
 
   const fetchQuestion = async () => {
     if (questionCount >= 5) {
@@ -90,7 +99,6 @@ function Quiz() {
   };
 
   const finishQuiz = () => {
-    setTime((Date.now() - startTime) / 1000);
     navigate("/results", { state: { score, time, name: playerName } });
   };
 
@@ -111,6 +119,7 @@ function Quiz() {
         ))}
       </div>
       {feedback && <p className="mt-4 font-bold">{feedback}</p>}
+      <p className="mt-4">Zeit: {time.toFixed(2)} Sekunden</p>
     </div>
   );
 }
