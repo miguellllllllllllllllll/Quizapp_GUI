@@ -59,7 +59,7 @@ function Quiz() {
   useEffect(() => {
     if (startTime) {
       const interval = setInterval(() => {
-        setTime((Date.now() - startTime) / 1000);
+        setTime(((Date.now() - startTime) / 1000).toFixed(2));
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -75,7 +75,7 @@ function Quiz() {
       setQuestion(response.data);
       setSelectedAnswer(null);
       setFeedback("");
-      setQuestionCount(questionCount + 1);
+      setQuestionCount((prev) => prev + 1);
     } catch (error) {
       console.error("Fehler beim Laden der Frage", error);
     }
@@ -90,7 +90,7 @@ function Quiz() {
       });
       setFeedback(response.data.message);
       if (response.data.correct) {
-        setScore(score + 1);
+        setScore((prev) => prev + 1);
       }
       setTimeout(fetchQuestion, 2000);
     } catch (error) {
@@ -119,7 +119,7 @@ function Quiz() {
         ))}
       </div>
       {feedback && <p className="mt-4 font-bold">{feedback}</p>}
-      <p className="mt-4">Zeit: {time.toFixed(2)} Sekunden</p>
+      <p className="mt-4">Zeit: {time} Sekunden</p>
     </div>
   );
 }
@@ -152,7 +152,7 @@ function Results() {
       <h2 className="text-2xl font-bold">Ergebnis</h2>
       <p>Name: {name}</p>
       <p>Punkte: {score}/5</p>
-      <p>Zeit: {time.toFixed(2)} Sekunden</p>
+      <p>Zeit: {time} Sekunden</p>
       <h3 className="text-xl font-bold mt-4">Top 3 Spieler</h3>
       <ul>
         {leaderboard.map((player, index) => (
