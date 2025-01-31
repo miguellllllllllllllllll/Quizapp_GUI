@@ -37,7 +37,7 @@ def get_keywords(attribute):
 @app.route('/quiz', methods=['GET'])
 def quiz():
     attribute = request.args.get('attribute')
-    if attribute not in ["Fläche", "Einwohner", "Hauptstadt", "Höchster Berg"]:
+    if attribute not in ["Länge", "Crewgröße", "Preis", "Frachtkapazität"]:
         return jsonify({"error": "Invalid attribute"}), 400
 
     correct_entry, incorrect_entries = get_keywords(attribute)
@@ -54,6 +54,7 @@ def quiz():
         "correct_value": correct_value,
         "correct_name": correct_name
     })
+
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -80,3 +81,4 @@ def serve():
 
 if __name__ == "__main__":
     app.run(debug=True)
+ 

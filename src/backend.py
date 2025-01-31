@@ -14,17 +14,44 @@ leaderboard_collection = db["leaderboard"]
 
 @app.route("/api/question", methods=["GET"])
 def get_question():
+    # Zufällige Frage aus der Sammlung auswählen
     question_data = collection.aggregate([{ "$sample": { "size": 1 } }]).next()
     attribute = question_data["attribute"]
+    ship_name = question_data["name"]
+    value = question_data["value"]
 
-    # Hole alle Städte für das gleiche Attribut
-    options = list(collection.find({"attribute": attribute}))
-    random.shuffle(options)
+    # Verschiedene Fragearten definieren
+    if attribute in ["Frachtkapazität", "Crewgröße"]:
+        # Frage nach dem Schiff mit der höchsten Kapazität oder Crewgröße
+        comparison = "die meiste Kapazität" if attribute == "Frachtkapazität" else "die größte Crewgröße"
+        correct_answer = ship_name
+        question_text = f"Welches Schiff hat {comparison}?"
+        options = list(collection.find({"attribute": attribute}).sort("value", -1))  # Sortiere absteigend nach dem Attribut
+        random.shuffle(options)
+    elif attribute == "Preis":
+        # Frage nach dem Preis eines Schiffs
+        correct_answer = question_data["value"]
+        question_text = f"Welches schiff kostet {value}?"
+        options = list(collection.find({"attribute": attribute}))
+        random.shuffle(options)
+    elif attribute == "Länge":
+        # Frage nach der Länge eines Schiffs
+        correct_answer = question_data["value"]
+        question_text = f"Wie lang ist {ship_name}?"
+        options = list(collection.find({"attribute": attribute}))
+        random.shuffle(options)
+    else:
+        # Frage nach einem allgemeinen Attribut
+        correct_answer = ship_name
+        question_text = f"Welches Schiff hat folgende Eigenschaft: {attribute}?"
+        options = list(collection.find({"attribute": attribute}))
+        random.shuffle(options)
 
+    # Frage-Objekt erstellen
     question = {
         "_id": str(question_data["_id"]),
-        "text": f"Welche Stadt hat folgende Eigenschaft: {attribute}?",
-        "correct_answer": question_data["name"],
+        "text": question_text,
+        "correct_answer": correct_answer,
         "options": [opt["name"] for opt in options[:3]]  # 3 Antwortmöglichkeiten
     }
 
@@ -74,3 +101,4 @@ def get_leaderboard():
 
 if __name__ == "__main__":
     app.run(debug=True)
+ 

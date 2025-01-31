@@ -22,7 +22,9 @@ function Home() {
 
   return (
     <div className="has-text-centered mt-5">
-      <h1 className="title is-2 mb-4">Willkommen zum Schweiz-Quiz!</h1>
+      <h1 className="title is-2 mb-4">
+        Willkommen zum Star Citizen-Schiff-Quiz!
+      </h1>
       <div className="field mb-4">
         <div className="control">
           <input
